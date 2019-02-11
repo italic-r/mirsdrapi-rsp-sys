@@ -1,0 +1,15 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: mirsdrapi-rsp
+Description: SDRPlay driver
+URL: http://www.sdrplay.com
+Version: 2.13.1
+Requires: 
+Requires.private: 
+Conflicts:
+Cflags: -I${includedir} -I/usr/local/include
+Libs: -L${libdir} -lmirsdrapi-rsp
+Libs.private: -L/usr/local/lib

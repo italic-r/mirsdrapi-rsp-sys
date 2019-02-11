@@ -1,0 +1,21 @@
+[package]
+name = "mirsdrapi-rsp-sys"
+version = "2.13.1"
+authors = ["italic <italic.rendezvous@gmail.com>"]
+edition = "2018"
+
+links = "mirsdrapi-rsp"
+build = "build.rs"
+include = ["src/**/*", "Cargo.toml", "include/*", "pkgconfig/*", "build.rs", "README.md", "LICENSE"]
+
+publish = false
+categories = ["external-ffi-bindings"]
+keywords = ["sdr", "rsp", "sdrplay", "amateur", "radio"]
+license-file = "LICENSE"
+readme = "README"
+
+[dependencies]
+
+[build-dependencies]
+pkg-config = "^0.3.14"
+bindgen = "*"

@@ -6,7 +6,16 @@ edition = "2018"
 
 links = "mirsdrapi-rsp"
 build = "build.rs"
-include = ["src/**/*", "Cargo.toml", "include/*", "pkgconfig/*", "build.rs", "README.md", "LICENSE"]
+include = [
+	"src/**/*",
+	"tests/**/*",
+	"Cargo.toml",
+	"build.rs",
+	"README.md",
+	"LICENSE",
+	"include/*",
+	"pkgconfig/*",
+]
 
 publish = false
 categories = ["external-ffi-bindings"]

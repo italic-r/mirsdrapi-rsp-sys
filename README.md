@@ -17,7 +17,8 @@ and header are installed in their default location at:
 `/usr/local/lib/libmirsdrapi-rsp.so.2.13`  
 
 #### Documentation
-For documentation, see the included header.
+For full documentation, see the
+[official API specification pdf](https://www.sdrplay.com/docs/SDRplay_SDR_API_Specification.pdf).
 
 #### License
 [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0)

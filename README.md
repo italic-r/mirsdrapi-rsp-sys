@@ -2,7 +2,7 @@
 
 This Rust crate provides a thin wrapper for the official SDRplay
 libraries for controlling SDRplay software-defined radios, namely
-RSP1, RSP1a, RSP2, RSP2pro, RSPduo.
+RSP1, RSP1a, RSP2, RSP2pro, RSPduo (single-tuner mode).
 These bindings are created using `bindgen` and the provided header.
 
 #### Dependencies

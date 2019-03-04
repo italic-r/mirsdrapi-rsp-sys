@@ -23,7 +23,8 @@ keywords = ["sdr", "rsp", "sdrplay", "amateur", "radio"]
 license-file = "LICENSE"
 readme = "README"
 
-[dependencies]
+[dev-dependencies]
+log = "*"
 
 [build-dependencies]
 pkg-config = "^0.3.14"

@@ -72,7 +72,7 @@ fn main() -> () {
         .blacklist_type("mir_sdr_rspDuo_DabNotch_t")
 
         .generate()
-        .unwrap();
+        .expect("Cannot generate bindings.");
 
     bindings.write_to_file(out_dir.join("bindings.rs"))
         .expect("Cannot write bindings.");

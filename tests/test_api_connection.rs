@@ -11,6 +11,7 @@
 
 #![allow(unused_imports)]
 #![allow(non_upper_case_globals)]
+#![allow(non_snake_case)]
 
 use std::ffi::CStr;
 use std::os::raw::{c_uchar, c_char, c_uint, c_int};
@@ -89,7 +90,7 @@ fn set_sync_update_period() {
 }
 
 #[test]
-fn api_version() -> () {
+fn api_version() {
     let mut ver: f32 = 0.;
     unsafe {
         mir_sdr_ApiVersion(&mut ver);
@@ -217,6 +218,27 @@ fn get_devices() {
 
 #[test]
 fn set_device_idx() {
+    if let Ok(devices) = _get_devices() {
+        for idx in 0..devices.len() {
+            let err_return = unsafe {mir_sdr_SetDeviceIdx(idx as u32)};
+            match err_return {
+                mir_sdr_ErrT_mir_sdr_Success => {
+                    let release_return = unsafe {mir_sdr_ReleaseDeviceIdx()};
+                    match release_return {
+                        mir_sdr_ErrT_mir_sdr_Success => println!("Hardware released."),
+                        mir_sdr_ErrT_mir_sdr_HwError => panic!("Hardware error!"),
+                        _ => {},
+                    }
+                },
+                mir_sdr_ErrT_mir_sdr_HwError => panic!(
+                    "Hardware error! Device is likely being used. Release the device and try again."
+                ),
+                _ => {},
+            }
+        }
+    } else {
+        panic!("Test \"set_device_idx()\" failed.");
+    }
 }
 
 #[test]

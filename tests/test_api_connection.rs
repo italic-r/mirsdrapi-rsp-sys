@@ -10,6 +10,7 @@
 //! Hardware version: 3
 
 #![allow(unused_imports)]
+#![allow(non_upper_case_globals)]
 
 use std::ffi::CStr;
 use std::os::raw::{c_uchar, c_char, c_uint, c_int};
@@ -28,8 +29,7 @@ fn api_version() -> () {
     );
 }
 
-#[test]
-fn get_devices() {
+fn _get_devices() -> Result<Vec<mir_sdr_DeviceT>, &'static str> {
     let max_devices: c_uint = 4;  // arbitrary limit
     let mut num_dev: c_uint = 0;
 
@@ -52,29 +52,38 @@ fn get_devices() {
             max_devices
         )
     };
-    assert!(err_return == mir_sdr_ErrT_mir_sdr_Success);
-    devices.truncate(num_dev as usize);
-    assert!(
-        devices.len() > 0,
-        "Did not find devices. Please ensure device is connected."
-    );
-
-    for dev in &devices {
-        println!("Device: {:?}", &dev);
-
-        let ser_no = unsafe {CStr::from_ptr(dev.SerNo)};
-        let ser_no = ser_no.clone().to_string_lossy().parse::<i32>();
-        if let Ok(ser) = ser_no {
-            println!("SerNo: {}", &ser);
-        } else {
-            panic!("Could not parse device serial number.");
-        }
-
-        let dev_nm = unsafe {CStr::from_ptr(dev.DevNm)}.clone().to_string_lossy();
-        println!("DevNm: {}", &dev_nm);
-
-        println!("hwVer: {}", &dev.hwVer);
-        println!("devAvail: {}", &dev.devAvail);
+    match err_return {
+        mir_sdr_ErrT_mir_sdr_Success => {},
+        _ => {return Err("mir_sdr_GetDevices() failed.");},
     }
+    devices.truncate(num_dev as usize);
+    match devices.len() {
+        x if x > 0 => {return Ok(devices);},
+        _ => {return Err("Device not found. Please ensure device is connected.");},
+    }
+}
 
+#[test]
+fn get_devices() {
+    if let Ok(devices) = _get_devices() {
+        for dev in &devices {
+            println!("Device: {:?}", &dev);
+
+            let ser_no = unsafe {CStr::from_ptr(dev.SerNo)};
+            let ser_no = ser_no.clone().to_string_lossy().parse::<i32>();
+            if let Ok(ser) = ser_no {
+                println!("SerNo: {}", &ser);
+            } else {
+                panic!("Could not parse device serial number.");
+            }
+
+            let dev_nm = unsafe {CStr::from_ptr(dev.DevNm)}.clone().to_string_lossy();
+            println!("DevNm: {}", &dev_nm);
+
+            println!("hwVer: {}", &dev.hwVer);
+            println!("devAvail: {}", &dev.devAvail);
+        }
+    } else {
+        panic!("Test \"get_devices()\" failed.")
+    }
 }

@@ -199,11 +199,7 @@ fn get_devices() {
 
             let ser_no = unsafe {CStr::from_ptr(dev.SerNo)};
             let ser_no = ser_no.clone().to_string_lossy().parse::<i32>();
-            if let Ok(ser) = ser_no {
-                println!("SerNo: {}", &ser);
-            } else {
-                panic!("Could not parse device serial number.");
-            }
+            assert!(ser_no.is_ok(), "Could not parse device serial number.");
 
             let dev_nm = unsafe {CStr::from_ptr(dev.DevNm)}.clone().to_string_lossy();
             println!("DevNm: {}", &dev_nm);

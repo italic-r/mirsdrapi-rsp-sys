@@ -182,12 +182,12 @@ fn _get_devices() -> Result<Vec<mir_sdr_DeviceT>, &'static str> {
     };
     match err_return {
         mir_sdr_ErrT_mir_sdr_Success => {},
-        _ => {return Err("mir_sdr_GetDevices() failed.");},
+        _ => return Err("mir_sdr_GetDevices() failed."),
     }
     devices.truncate(num_dev as usize);
     match devices.len() {
-        x if x > 0 => {return Ok(devices);},
-        _ => {return Err("Device not found. Please ensure device is connected.");},
+        x if x > 0 => return Ok(devices),
+        _ => return Err("Device not found. Please ensure device is connected."),
     }
 }
 

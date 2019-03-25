@@ -17,6 +17,8 @@ use std::ffi::CStr;
 use std::os::raw::{c_uchar, c_char, c_uint, c_int};
 use mirsdrapi_rsp_sys::*;
 
+const test_dev_hw_ver: c_uchar = 3;
+
 
 /* Deprecated API functions */
 
@@ -54,38 +56,47 @@ fn get_gr_by_freq() {
 
 
 #[test]
+#[ignore]
 fn reinit() {
 }
 
 #[test]
+#[ignore]
 fn set_rf() {
 }
 
 #[test]
+#[ignore]
 fn set_fs() {
 }
 
 #[test]
+#[ignore]
 fn set_gr() {
 }
 
 #[test]
+#[ignore]
 fn set_gr_params() {
 }
 
 #[test]
+#[ignore]
 fn set_dc_mode() {
 }
 
 #[test]
+#[ignore]
 fn set_dc_track_time() {
 }
 
 #[test]
+#[ignore]
 fn set_sync_update_sample_num() {
 }
 
 #[test]
+#[ignore]
 fn set_sync_update_period() {
 }
 
@@ -102,58 +113,73 @@ fn api_version() {
 }
 
 #[test]
+#[ignore]
 fn reset_update_flags() {
 }
 
 #[test]
+#[ignore]
 fn set_transfer_mode() {
 }
 
 #[test]
+#[ignore]
 fn down_convert() {
 }
 
 #[test]
+#[ignore]
 fn set_ppm() {
 }
 
 #[test]
+#[ignore]
 fn set_lo_mode() {
 }
 
 #[test]
+#[ignore]
 fn set_gr_alt_mode() {
 }
 
 #[test]
+#[ignore]
 fn dc_offset_iq_imbalance_control() {
 }
 
 #[test]
+#[ignore]
 fn decimate_control() {
 }
 
 #[test]
+#[ignore]
 fn agc_control() {
 }
 
 #[test]
+#[ignore]
 fn stream_init() {
 }
 
 #[test]
+#[ignore]
 fn stream_uninit() {
 }
 
 #[test]
 fn debug_enable() {
+    assert!(unsafe {mir_sdr_DebugEnable(1)} == mir_sdr_ErrT_mir_sdr_Success, "Failed to enable debug.");
+    assert!(unsafe {mir_sdr_DebugEnable(0)} == mir_sdr_ErrT_mir_sdr_Success, "Failed to disable debug.")
 }
 
 #[test]
+#[ignore]
 fn get_current_gain() {
 }
 
 #[test]
+#[ignore]
 fn gain_change_callback_message_received() {
 }
 
@@ -173,21 +199,17 @@ fn _get_devices() -> Result<Vec<mir_sdr_DeviceT>, &'static str> {
         devices.push(dummy.clone());
     }
 
-    let err_return = unsafe {
-        mir_sdr_GetDevices(
+    match unsafe {mir_sdr_GetDevices(
             devices.as_mut_slice().first_mut().unwrap(),
             &mut num_dev,
-            max_devices
-        )
-    };
-    match err_return {
+            max_devices)} {
         mir_sdr_ErrT_mir_sdr_Success => {},
         _ => return Err("mir_sdr_GetDevices() failed."),
     }
     devices.truncate(num_dev as usize);
     match devices.len() {
-        x if x > 0 => return Ok(devices),
-        _ => return Err("Device not found. Please ensure device is connected."),
+        0 => return Err("Device not found. Please ensure device is connected."),
+        _ => return Ok(devices),
     }
 }
 
@@ -212,67 +234,105 @@ fn get_devices() {
     }
 }
 
-#[test]
-fn set_device_idx() {
-    if let Ok(devices) = _get_devices() {
-        for idx in 0..devices.len() {
-            let err_return = unsafe {mir_sdr_SetDeviceIdx(idx as u32)};
-            match err_return {
-                mir_sdr_ErrT_mir_sdr_Success => {
-                    let release_return = unsafe {mir_sdr_ReleaseDeviceIdx()};
-                    match release_return {
-                        mir_sdr_ErrT_mir_sdr_Success => println!("Hardware released."),
-                        mir_sdr_ErrT_mir_sdr_HwError => panic!("Hardware error!"),
-                        _ => {},
-                    }
-                },
-                mir_sdr_ErrT_mir_sdr_HwError => panic!(
-                    "Hardware error! Device is likely being used. Release the device and try again."
-                ),
-                _ => {},
-            }
-        }
-    } else {
-        panic!("Test \"set_device_idx()\" failed.");
+fn _set_device_idx(devices: Vec<mir_sdr_DeviceT>, dev: u32) -> Result<(), &'static str> {
+    if dev > devices.len() as u32 {
+        return Err("Index of requested device is out of range.");
+    }
+    match unsafe {mir_sdr_SetDeviceIdx(dev)} {
+        mir_sdr_ErrT_mir_sdr_Success => Ok(()),
+        mir_sdr_ErrT_mir_sdr_HwError => return Err("Hardware error at lock. Device may be in use."),
+        _ => unreachable!(),
+    }
+}
+
+fn _release_device_idx() -> Result<(), &'static str> {
+    match unsafe {mir_sdr_ReleaseDeviceIdx()} {
+        mir_sdr_ErrT_mir_sdr_Success => Ok(()),
+        mir_sdr_ErrT_mir_sdr_HwError => return Err("Hardware error at release."),
+        _ => unreachable!(),
     }
 }
 
 #[test]
+fn set_device_idx() {
+    if let Ok(devices) = _get_devices() {
+        assert!(_set_device_idx(devices, 0).is_ok());
+    }
+    assert!(_release_device_idx().is_ok());
+}
+
+#[test]
 fn release_device_idx() {
+    if let Ok(devices) = _get_devices() {
+        assert!(_set_device_idx(devices, 0).is_ok());
+    }
+    assert!(_release_device_idx().is_ok());
 }
 
 #[test]
 fn get_hw_version() {
+    // TODO: getting bad HwVer on return
+    // must initialize a device before using this function
+    let mut ver: c_uchar = 0;
+    if let Ok(devices) = _get_devices() {
+        match _set_device_idx(devices, 0) {
+            Ok(()) => {
+                match unsafe {mir_sdr_GetHwVersion(&mut ver)} {
+                    mir_sdr_ErrT_mir_sdr_Success => {
+                        // HwVer managed by rust, so can release device in case of assert failure.
+                        match _release_device_idx() {
+                            Ok(()) => {
+                                assert!(ver == test_dev_hw_ver,
+                                    format!("\nCurrent hardware version: {}\nTest hardware version: {}",
+                                    &ver, &test_dev_hw_ver));
+                            },
+                            Err(msg) => panic!(msg),
+                        }
+                    },
+                    mir_sdr_ErrT_mir_sdr_InvalidParam => panic!("API returned: InvalidParam"),
+                    _ => {},
+                }
+            },
+            Err(msg) => panic!(msg),
+        }
+    }
 }
 
 
 /* RSP2 */
 
 #[test]
+#[ignore]
 fn rsp2_antenna_control() {
 }
 
 #[test]
+#[ignore]
 fn rsp2_external_reference_control() {
 }
 
 #[test]
+#[ignore]
 fn rsp2_biasT_control() {
 }
 
 #[test]
+#[ignore]
 fn rsp2_rf_notch_enable() {
 }
 
 #[test]
+#[ignore]
 fn rsp_set_gr() {
 }
 
 #[test]
+#[ignore]
 fn rsp_set_gr_limits() {
 }
 
 #[test]
+#[ignore]
 fn am_port_select() {
 }
 
@@ -280,14 +340,17 @@ fn am_port_select() {
 /* RSP 1a */
 
 #[test]
+#[ignore]
 fn rsp1a_biastT() {
 }
 
 #[test]
+#[ignore]
 fn rsp1a_dab_notch() {
 }
 
 #[test]
+#[ignore]
 fn rsp1a_broadcast_notch() {
 }
 
@@ -295,25 +358,31 @@ fn rsp1a_broadcast_notch() {
 /* RSPduo */
 
 #[test]
+#[ignore]
 fn rspduo_tuner_select() {
 }
 
 #[test]
+#[ignore]
 fn rspduo_ext_ref() {
 }
 
 #[test]
+#[ignore]
 fn rspduo_biasT() {
 }
 
 #[test]
+#[ignore]
 fn rspduo_tuner1_am_notch() {
 }
 
 #[test]
+#[ignore]
 fn rspduo_broadcast_notch() {
 }
 
 #[test]
+#[ignore]
 fn rspduo_dab_notch() {
 }

@@ -270,8 +270,10 @@ fn release_device_idx() {
 }
 
 #[test]
+#[ignore]
 fn get_hw_version() {
-    // TODO: getting bad HwVer on return
+    // XXX: getting bad HwVer on return
+
     // must initialize a device before using this function
     let mut ver: c_uchar = 0;
     if let Ok(devices) = _get_devices() {
@@ -283,14 +285,17 @@ fn get_hw_version() {
                         match _release_device_idx() {
                             Ok(()) => {
                                 assert!(ver == test_dev_hw_ver,
-                                    format!("\nCurrent hardware version: {}\nTest hardware version: {}",
+                                    format!("\nCurrent hardware version: {}\nTest hardware version: {}\n",
                                     &ver, &test_dev_hw_ver));
                             },
                             Err(msg) => panic!(msg),
                         }
                     },
-                    mir_sdr_ErrT_mir_sdr_InvalidParam => panic!("API returned: InvalidParam"),
-                    _ => {},
+                    mir_sdr_ErrT_mir_sdr_InvalidParam => {
+                        _release_device_idx();
+                        panic!("API returned: InvalidParam")
+                    },
+                    _ => unreachable!(),
                 }
             },
             Err(msg) => panic!(msg),

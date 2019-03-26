@@ -128,8 +128,20 @@ fn down_convert() {
 }
 
 #[test]
-#[ignore]
 fn set_ppm() {
+    match unsafe {mir_sdr_SetPpm(0.)} {
+        mir_sdr_ErrT_mir_sdr_Success => {},
+        mir_sdr_ErrT_mir_sdr_RfUpdateError => {
+            panic!("Previously requested update has not yet been applied.");
+        },
+        mir_sdr_ErrT_mir_sdr_OutOfRange => {
+            panic!("Requested PPM value out of range.");
+        },
+        mir_sdr_ErrT_mir_sdr_HwError => {
+            panic!("Error accessing device.");
+        },
+        _ => unreachable!(),
+    }
 }
 
 #[test]

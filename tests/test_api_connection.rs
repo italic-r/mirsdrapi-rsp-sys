@@ -277,29 +277,23 @@ fn get_hw_version() {
     // must initialize a device before using this function
     let mut ver: c_uchar = 0;
     if let Ok(devices) = _get_devices() {
-        match _set_device_idx(devices, 0) {
-            Ok(()) => {
-                match unsafe {mir_sdr_GetHwVersion(&mut ver)} {
-                    mir_sdr_ErrT_mir_sdr_Success => {
-                        // HwVer managed by rust, so can release device in case of assert failure.
-                        match _release_device_idx() {
-                            Ok(()) => {
-                                assert!(ver == test_dev_hw_ver,
-                                    format!("\nCurrent hardware version: {}\nTest hardware version: {}\n",
-                                    &ver, &test_dev_hw_ver));
-                            },
-                            Err(msg) => panic!(msg),
-                        }
-                    },
-                    mir_sdr_ErrT_mir_sdr_InvalidParam => {
-                        _release_device_idx();
-                        panic!("API returned: InvalidParam")
-                    },
-                    _ => unreachable!(),
+        if let Ok(()) = _set_device_idx(devices, 0) {
+            if let mir_sdr_ErrT_mir_sdr_Success = unsafe {mir_sdr_GetHwVersion(&mut ver)} {
+                // HwVer managed by rust, so can release device in case of assert failure.
+                if let Ok(()) = _release_device_idx() {
+                        assert!(ver == test_dev_hw_ver,
+                            format!("\nCurrent hardware version: {}\nTest hardware version: {}\n",
+                            &ver, &test_dev_hw_ver));
                 }
-            },
-            Err(msg) => panic!(msg),
+            } else {
+                _release_device_idx();
+                panic!("API returned: InvalidParam");
+            }
+        } else {
+            panic!();
         }
+    } else {
+        panic!();
     }
 }
 

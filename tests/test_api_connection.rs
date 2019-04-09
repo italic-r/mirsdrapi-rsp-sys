@@ -25,31 +25,31 @@ const test_dev_hw_ver: c_uchar = 3;
 #[test]
 #[ignore]
 fn init() {
-    assert!(true);
+    panic!();
 }
 
 #[test]
 #[ignore]
 fn uninit() {
-    assert!(true);
+    panic!();
 }
 
 #[test]
 #[ignore]
 fn read_packet() {
-    assert!(true);
+    panic!();
 }
 
 #[test]
 #[ignore]
 fn set_param() {
-    assert!(true);
+    panic!();
 }
 
 #[test]
 #[ignore]
 fn get_gr_by_freq() {
-    assert!(true);
+    panic!();
 }
 
 /* END Deprecated API functions */
@@ -174,9 +174,21 @@ fn agc_control() {
 fn stream_init() {
 }
 
+fn _stream_uninit() -> Result<(), &'static str> {
+    match unsafe {mir_sdr_StreamUninit()} {
+        mir_sdr_ErrT_mir_sdr_Success => Ok(()),
+        mir_sdr_ErrT_mir_sdr_Fail => Err("Stream uninit failed."),
+        _ => unreachable!(),
+    }
+}
+
 #[test]
 #[ignore]
 fn stream_uninit() {
+    match _stream_uninit() {
+        Ok(()) => {},
+        Err(c) => panic!(c),
+    }
 }
 
 #[test]
@@ -242,7 +254,7 @@ fn get_devices() {
             println!("devAvail: {}", &dev.devAvail);
         }
     } else {
-        panic!("Test \"get_devices()\" failed.")
+        panic!();
     }
 }
 

@@ -13,8 +13,10 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_snake_case)]
 
+use std::{thread, time};
+use std::slice;
 use std::ffi::CStr;
-use std::os::raw::{c_uchar, c_char, c_uint, c_int};
+use std::os::raw::{c_uchar, c_char, c_uint, c_int, c_short, c_void};
 use mirsdrapi_rsp_sys::*;
 
 const test_dev_hw_ver: c_uchar = 3;
@@ -169,9 +171,113 @@ fn decimate_control() {
 fn agc_control() {
 }
 
+unsafe extern "C" fn _stream_callback(
+    xi: *mut c_short, // array of i16
+    xq: *mut c_short, // array of i16
+    firstSampleNum: c_uint,
+    grChanged: c_int,
+    rfChanged: c_int,
+    fsChanged: c_int,
+    numSamples: c_uint,
+    reset: c_uint,
+    hwRemoved: c_uint,
+    cbContext: *mut c_void // opaque struct: rust -> C -> rust
+) {
+    assert!(!xi.is_null());
+    assert!(!xq.is_null());
+    let xi = slice::from_raw_parts(xi, numSamples as usize);
+    let xq = slice::from_raw_parts(xq, numSamples as usize);
+    println!("IQ:             {:#?}, {:#?}", xi[0], xq[0]);
+    println!("firstSampleNum: {:#?}", firstSampleNum);
+    println!("grChanged:      {:#?}", grChanged);
+    println!("rfChanged:      {:#?}", rfChanged);
+    println!("fsChanged:      {:#?}", fsChanged);
+    println!("numSamples:     {:#?}", numSamples);
+    println!("reset:          {:#?}", reset);
+    println!("hwRemoved:      {:#?}", hwRemoved);
+    println!("cbContext:      {:#?}", cbContext);
+}
+
+unsafe extern "C" fn _gain_change_callback(
+    gRdB: c_uint,
+    lnaGRdB: c_uint,
+    cbContext: *mut c_void
+) {
+    println!("gRdB:           {:#?}", gRdB);
+    println!("lnaGRdB:        {:#?}", lnaGRdB);
+    println!("cbContext:      {:#?}", cbContext);
+}
+
+struct ContextObject {
+    _private: u32,
+}
+
 #[test]
-#[ignore]
 fn stream_init() {
+    // unsafe {mir_sdr_DebugEnable(1)};
+
+    let devices = _get_devices();
+    match devices {
+        Ok(devs) => {
+            match _set_device_idx(devs, 0) {
+                Ok(_) => {},
+                Err(c) => panic!(c),
+            }
+        },
+        Err(c) => panic!(c),
+    }
+
+    let mut gRdb: i32 = 0;
+    let mut gRdBsystem: c_int = 0;
+    let mut samplesPerPacket: c_int = 1024;
+    let mut _cbContext = ContextObject {_private: 2};
+    // WTF is this
+    let cbContext: *mut c_void = &mut _cbContext as *mut _ as *mut c_void;
+
+    let err_return = unsafe {
+        mir_sdr_StreamInit(
+            &mut gRdb,
+            2., // fsMHz
+            7.15, // rfMHz
+            mir_sdr_Bw_MHzT_mir_sdr_BW_0_600, // bwType
+            mir_sdr_If_kHzT_mir_sdr_IF_Zero, // ifType
+            3, // LNAstate
+            &mut gRdBsystem,
+            mir_sdr_SetGrModeT_mir_sdr_USE_SET_GR, // setGrMode
+            &mut samplesPerPacket,
+            Some(_stream_callback),
+            Some(_gain_change_callback),
+            cbContext,
+        )
+    };
+
+    // give enough time for device to initialize and call callback
+    let sleep_time = time::Duration::from_millis(50);
+    thread::sleep(sleep_time);
+
+    match err_return {
+        mir_sdr_ErrT_mir_sdr_Success => {
+            println!("gRdb:             {}", gRdb);
+            println!("gRdBsystem:       {}", gRdBsystem);
+            println!("samplesPerPacket: {}", samplesPerPacket);
+
+            match _stream_uninit() {
+                Ok(()) => {
+                    match _release_device_idx() {
+                        Ok(()) => {},
+                        Err(c) => panic!(c),
+                    }
+                },
+                Err(c) => panic!(c),
+            }
+        },
+        mir_sdr_ErrT_mir_sdr_AlreadyInitialised => panic!("API already initialized."),
+        mir_sdr_ErrT_mir_sdr_InvalidParam       => panic!("Null pointers."),
+        mir_sdr_ErrT_mir_sdr_OutOfRange         => panic!("Parameters out of range."),
+        mir_sdr_ErrT_mir_sdr_HwError            => panic!("Failed to access device."),
+        mir_sdr_ErrT_mir_sdr_Fail               => panic!("Other failure."),
+        _                                       => unreachable!(),
+    }
 }
 
 fn _stream_uninit() -> Result<(), &'static str> {

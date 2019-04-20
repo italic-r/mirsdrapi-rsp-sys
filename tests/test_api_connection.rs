@@ -208,6 +208,7 @@ unsafe extern "C" fn _gain_change_callback(
     println!("cbContext:      {:#?}", cbContext);
 }
 
+#[repr(C)]
 struct ContextObject {
     _private: u32,
 }

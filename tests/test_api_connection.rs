@@ -409,21 +409,12 @@ fn get_hw_version() {
     if let Ok(devices) = _get_devices() {
         if let Ok(()) = _set_device_idx(devices, 0) {
             if let mir_sdr_ErrT_mir_sdr_Success = unsafe {mir_sdr_GetHwVersion(&mut ver)} {
-                // HwVer managed by rust, so can release device in case of assert failure.
-                if let Ok(()) = _release_device_idx() {
-                        assert!(ver == test_dev_hw_ver,
-                            format!("\nCurrent hardware version: {}\nTest hardware version: {}\n",
-                            &ver, &test_dev_hw_ver));
-                }
-            } else {
                 _release_device_idx();
-                panic!("API returned: InvalidParam");
+                assert!(ver == test_dev_hw_ver,
+                    format!("Hardware version: {}. Test hardware: {}.",
+                    &ver, &test_dev_hw_ver));
             }
-        } else {
-            panic!();
         }
-    } else {
-        panic!();
     }
 }
 

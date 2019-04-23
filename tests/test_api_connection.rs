@@ -60,6 +60,76 @@ fn get_gr_by_freq() {
 #[test]
 #[ignore]
 fn reinit() {
+    /* does not require reinit:
+     * GR mode
+     * rf frequency
+     *
+     * requires reinit:
+     * sample rate
+     * bandwidth type
+     * if type
+     * lo mode
+     * am port
+     */
+
+    if let Ok(devs) = _get_devices() {
+        if let Err(e) = _set_device_idx(devs, 0) {
+            panic!(e);
+        }
+    }
+    if let Err(c) = _stream_init() {
+        if let Err(e) = _release_device_idx() {
+            panic!(e);
+        }
+        panic!(c);
+    }
+
+    // give enough time for device to initialize and call callback
+    let sleep_time = time::Duration::from_millis(50);
+    thread::sleep(sleep_time);
+
+    let mut gRdB: c_int = 0;
+    let mut gRdBsystem: c_int = 0;
+    let mut samplesPerPacket: c_int = 0;
+
+    let reinit_err_return = unsafe {
+        mir_sdr_Reinit(
+            &mut gRdB,
+            2.,
+            7.15,
+            mir_sdr_Bw_MHzT_mir_sdr_BW_0_300,
+            mir_sdr_If_kHzT_mir_sdr_IF_Zero,
+            mir_sdr_LoModeT_mir_sdr_LO_Auto,
+            4, // LNAmode
+            &mut gRdBsystem,
+            mir_sdr_SetGrModeT_mir_sdr_USE_SET_GR,
+            &mut samplesPerPacket,
+            mir_sdr_ReasonForReinitT_mir_sdr_CHANGE_BW_TYPE,
+        )
+    };
+
+    // give enough time for device to initialize and call callback
+    let sleep_time = time::Duration::from_millis(50);
+    thread::sleep(sleep_time);
+
+    match reinit_err_return {
+        mir_sdr_ErrT_mir_sdr_Success       => {
+            match _stream_uninit() {
+                Ok(_) => {
+                    if let Err(e) = _release_device_idx() {
+                        panic!(e);
+                    }
+                },
+                Err(c) => panic!(c),
+            }
+        },
+        mir_sdr_ErrT_mir_sdr_InvalidParam  => panic!("NULL pointers."),
+        mir_sdr_ErrT_mir_sdr_OutOfRange    => panic!("Requested parameters outside of acceptable range."),
+        mir_sdr_ErrT_mir_sdr_AliasingError => panic!("Aliasing error."),
+        mir_sdr_ErrT_mir_sdr_HwError       => panic!("Could not access hardware."),
+        mir_sdr_ErrT_mir_sdr_Fail          => panic!("Other failure."),
+        _                                  => unreachable!(),
+    }
 }
 
 #[test]

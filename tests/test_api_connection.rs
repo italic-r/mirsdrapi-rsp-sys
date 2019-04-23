@@ -290,9 +290,8 @@ fn _stream_uninit() -> Result<(), &'static str> {
 #[test]
 #[ignore]
 fn stream_uninit() {
-    match _stream_uninit() {
-        Ok(()) => {},
-        Err(c) => panic!(c),
+    if let Err(c) = _stream_uninit() {
+        panic!(c);
     }
 }
 
@@ -399,19 +398,30 @@ fn release_device_idx() {
 }
 
 #[test]
-#[ignore]
 fn get_hw_version() {
-    // XXX: getting bad HwVer on return
-
-    // must initialize a device before using this function
     let mut ver: c_uchar = 0;
+
     if let Ok(devices) = _get_devices() {
-        if let Ok(()) = _set_device_idx(devices, 0) {
-            if let mir_sdr_ErrT_mir_sdr_Success = unsafe {mir_sdr_GetHwVersion(&mut ver)} {
-                _release_device_idx();
-                assert!(ver == test_dev_hw_ver,
-                    format!("Hardware version: {}. Test hardware: {}.",
-                    &ver, &test_dev_hw_ver));
+        if let Ok(_) = _set_device_idx(devices, 0) {
+            // must initialize stream before calling this function
+            if let Ok(_) = _stream_init() {
+                // give enough time for device to initialize and call callback
+                let sleep_time = time::Duration::from_millis(50);
+                thread::sleep(sleep_time);
+
+                if let mir_sdr_ErrT_mir_sdr_Success = unsafe {mir_sdr_GetHwVersion(&mut ver)} {
+                    assert!(
+                        ver == test_dev_hw_ver,
+                        format!("Device versions do not match; returned: {}, test hardware: {}",
+                                &ver, &test_dev_hw_ver));
+                }
+
+                if let Err(c) = _stream_uninit() {
+                    panic!(c);
+                }
+                if let Err(c) = _release_device_idx() {
+                    panic!(c);
+                }
             }
         }
     }

@@ -58,7 +58,6 @@ fn get_gr_by_freq() {
 
 
 #[test]
-#[ignore]
 fn reinit() {
     /* does not require reinit:
      * GR mode
@@ -322,7 +321,6 @@ fn _stream_init() -> Result<(), &'static str>{
 }
 
 #[test]
-#[ignore]
 fn stream_init() {
     if let Ok(devs) = _get_devices() {
         if let Err(e) = _set_device_idx(devs, 0) {

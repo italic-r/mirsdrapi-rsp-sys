@@ -213,20 +213,8 @@ struct ContextObject {
     _private: u32,
 }
 
-#[test]
-fn stream_init() {
+fn _stream_init() -> Result<(), &'static str>{
     // unsafe {mir_sdr_DebugEnable(1)};
-
-    let devices = _get_devices();
-    match devices {
-        Ok(devs) => {
-            match _set_device_idx(devs, 0) {
-                Ok(_) => {},
-                Err(c) => panic!(c),
-            }
-        },
-        Err(c) => panic!(c),
-    }
 
     let mut gRdb: i32 = 0;
     let mut gRdBsystem: c_int = 0;
@@ -242,7 +230,7 @@ fn stream_init() {
             7.15, // rfMHz
             mir_sdr_Bw_MHzT_mir_sdr_BW_0_600, // bwType
             mir_sdr_If_kHzT_mir_sdr_IF_Zero, // ifType
-            3, // LNAstate
+            4, // LNAstate
             &mut gRdBsystem,
             mir_sdr_SetGrModeT_mir_sdr_USE_SET_GR, // setGrMode
             &mut samplesPerPacket,
@@ -251,33 +239,43 @@ fn stream_init() {
             cbContext,
         )
     };
+    match err_return {
+        mir_sdr_ErrT_mir_sdr_Success            => Ok(()),
+        mir_sdr_ErrT_mir_sdr_AlreadyInitialised => Err("API already initialized."),
+        mir_sdr_ErrT_mir_sdr_InvalidParam       => Err("Null pointers."),
+        mir_sdr_ErrT_mir_sdr_OutOfRange         => Err("Parameters out of range."),
+        mir_sdr_ErrT_mir_sdr_HwError            => Err("Failed to access device."),
+        mir_sdr_ErrT_mir_sdr_Fail               => Err("Other failure."),
+        _                                       => unreachable!(),
+    }
+
+}
+
+#[test]
+#[ignore]
+fn stream_init() {
+    if let Ok(devs) = _get_devices() {
+        if let Err(e) = _set_device_idx(devs, 0) {
+            panic!(e);
+        }
+    }
+    let err_return = _stream_init();
 
     // give enough time for device to initialize and call callback
     let sleep_time = time::Duration::from_millis(50);
     thread::sleep(sleep_time);
 
     match err_return {
-        mir_sdr_ErrT_mir_sdr_Success => {
-            println!("gRdb:             {}", gRdb);
-            println!("gRdBsystem:       {}", gRdBsystem);
-            println!("samplesPerPacket: {}", samplesPerPacket);
-
-            match _stream_uninit() {
-                Ok(()) => {
-                    match _release_device_idx() {
-                        Ok(()) => {},
-                        Err(c) => panic!(c),
-                    }
-                },
-                Err(c) => panic!(c),
+        Ok(_) => {
+            if let Err(c) = _stream_uninit() {
+                panic!(c);
+            } else {
+                if let Err(e) = _release_device_idx() {
+                    panic!(e);
+                }
             }
         },
-        mir_sdr_ErrT_mir_sdr_AlreadyInitialised => panic!("API already initialized."),
-        mir_sdr_ErrT_mir_sdr_InvalidParam       => panic!("Null pointers."),
-        mir_sdr_ErrT_mir_sdr_OutOfRange         => panic!("Parameters out of range."),
-        mir_sdr_ErrT_mir_sdr_HwError            => panic!("Failed to access device."),
-        mir_sdr_ErrT_mir_sdr_Fail               => panic!("Other failure."),
-        _                                       => unreachable!(),
+        Err(c) => panic!(c),
     }
 }
 

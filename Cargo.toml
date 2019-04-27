@@ -4,7 +4,6 @@ version = "2.13.1"
 authors = ["italic <italic.rendezvous@gmail.com>"]
 edition = "2018"
 
-links = "mirsdrapi-rsp"
 build = "build.rs"
 include = [
 	"src/**/*",

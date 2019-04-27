@@ -4,7 +4,7 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() -> () {
-    let crate_root = env!("CARGO_MANIFEST_DIR");
+    let crate_root = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     let bindings = bindgen::Builder::default()
@@ -77,15 +77,30 @@ fn main() -> () {
     bindings.write_to_file(out_dir.join("bindings.rs"))
         .expect("Cannot write bindings.");
 
-    // only use pkg_config ON linux TARGETTING linux
-    #[cfg(unix)]
+    let host = env::var("HOST").unwrap();
+    let target = env::var("TARGET").unwrap();
+
+    if host == "x86_64-unknown-linux-gnu" ||
+       host == "i686-unknown-linux-gnu"   ||
+       host == "armv7-unknown-linux-gnueabihf"
     {
-        if cfg!(target_os = "linux") {
-            let pkg = PathBuf::from(&crate_root).join("pkgconfig");
-            let _env = env::set_var("PKG_CONFIG_PATH", &pkg);
-            pkg_config::Config::new()
-                .atleast_version("2.13.1")
-                .probe("mirsdrapi-rsp").expect("Cannot find RSP driver.");
+        // pkg_config will abort if cross-compiling
+        let pkg = PathBuf::from(&crate_root).join("pkgconfig");
+        let _env = env::set_var("PKG_CONFIG_PATH", &pkg);
+
+        pkg_config::Config::new()
+            .atleast_version("2.13.1")
+            .probe("mirsdrapi-rsp").expect("Cannot find RSP driver.");
+
+    } else if host == "x86_64-pc-windows-msvc" {
+        // gotta do this the hard way...
+        if target == "x86_64-pc-windows-msvc" {
+            println!("cargo:rustc-link-search=native=C:/Program Files/SDRplay/API/x64")
+
+        } else if target == "i686-pc-windows-msvc" {
+            println!("cargo:rustc-link-search=native=C:/Program Files/SDRplay/API/x86")
         }
+
+        println!("cargo:rustc-link-lib=mir_sdr_api");
     }
 }

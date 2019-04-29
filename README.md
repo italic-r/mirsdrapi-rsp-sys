@@ -1,4 +1,4 @@
-# mirsdrapi-rsp-sys 2.13
+# mirsdrapi-rsp-sys 2.13.1
 
 This Rust crate provides a thin wrapper for the official RSP
 libraries for controlling SDRplay software-defined radios, namely
@@ -6,10 +6,12 @@ RSP1, RSP1a, RSP2, RSP2pro, RSPduo (single-tuner mode).
 These bindings are created using `bindgen` and the provided header.
 
 #### Status
-This crate is being developed on Linux, and as such will be focusing on
-peculiarities of Linux only (for now). Once the Linux build system is
-finished, then Windows will come, then OSX if someone is willing to
-contribute (I do not own an iOS device).
+This crate is developed on Linux, with support for Windows and Mac
+facilitated by virtual machines. While tests are still incomplete,
+major functions like stream processing and device registration are
+proven working, so work will begin on the rusty wrapper soon. Tests
+will continue to be filled out, especially to explore methods of
+working with the API.
 
 This wrapper is developed on version 2.13.1 of the RSP driver.
 Version 3.01 will be released in the near future, but will be wrapped

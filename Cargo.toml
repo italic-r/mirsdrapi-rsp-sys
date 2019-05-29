@@ -1,6 +1,6 @@
 [package]
 name = "mirsdrapi-rsp-sys"
-description = "Bindgen-generated thing wrapper around SDRplay Ltd's RSP control driver."
+description = "Bindgen-generated thin wrapper around SDRplay Ltd's RSP control driver."
 version = "2.13.1"
 authors = ["italic <italic.rendezvous@gmail.com>"]
 repository = "https://github.com/italic-r/mirsdrapi-rsp-sys"

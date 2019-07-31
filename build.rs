@@ -71,6 +71,12 @@ fn main() -> () {
         .blacklist_type("mir_sdr_rspDuo_BroadcastNotch_t")
         .blacklist_type("mir_sdr_rspDuo_DabNotch_t")
 
+        .blacklist_function("mir_sdr_Init")
+        .blacklist_function("mir_sdr_Uninit")
+        .blacklist_function("mir_sdr_ReadPacket")
+        .blacklist_function("mir_sdr_GetGrByFreq")
+        .blacklist_function("mir_sdr_SetParam")
+
         .generate()
         .expect("Cannot generate bindings.");
 
